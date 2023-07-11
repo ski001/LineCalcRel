@@ -1,0 +1,238 @@
+/* --------------------
+   シューティングゲーム
+   右から来る数字を破壊して
+   足し算が0になったらBOM
+   -------------------- */
+seq(
+ let(gm,context), /* ゲームメインクラス */
+
+ /* メンバ変数 */
+ let(gm.disp,newCDisp), /* 表示画面 */
+ let(gm.back,newCDisp), /* 数値画面 */
+ let(gm.score,0), /* スコア */
+ let(gm.gmcount,0), /* ゲーム進行カウンタ */
+ let(gm.stsum,0), /* 撃ち落し下1桁(数字を打ち落とすと足された0だとBOM) */
+ let(gm.x,0), /* X 座標 */
+ let(gm.y,5), /* Y 座標 */
+ let(gm.bx,-1), /* 弾丸X座標 */
+ let(gm.by,0), /* 弾丸Y座標 */
+ let(gm.numstr,"0123456789"), /* 数字文字列 */
+ let(gm.loop,1), /* ゲーム中か */
+ let(gm.maxx,50), /* 右端 */
+ let(gm.level,0), /* レベル */
+
+ /* メンバ関数 */
+
+ /* 当たり判定
+    @1: X座標
+    @2: Y座標
+    ret: 0->外れ 1->当たり
+ */
+ def(gm.chkhit,@'
+/* 弾当たり判定 */
+/* 2文字判定する(すり抜け対策) */
+seq(
+ let(ch,this.back.getch(@1,@2)),
+ if(eq(ch," "),
+  /* 外れ */
+  0 ,
+  /* 当たり */
+  seq(
+   let(this.stsum,mod(this.stsum + ch,10)), /* BOM 合計を足す */
+   let(this.score,this.score + ch*10),
+   /* 当たり表示 */
+   this.disp.dprint(@1,@2,"*"),
+   /* 数字消去 */
+   this.back.dprint(@1,@2," "),
+   1
+  )
+ )
+)
+'
+ ),
+
+ /* ゲームメイン */
+ def(gm.main,@'
+seq(
+ /* オープニング表示 */
+ while(1 , 
+  seq(
+   this.disp.dprint(10 ,5 ,"push sps to start"),
+   this.disp.disp,
+   delay(100),
+   this.disp.dprint(10 ,5 ,"                 "),
+   this.disp.disp,
+   if(rinput(^sps), break),
+   delay(50)
+  )
+ ),
+ this.disp.dprint(10 , 5 ,"START!"),
+ this.disp.disp,
+ delay(1000),
+
+ /* 初期化 */
+ this.back.clear,
+ this.disp.clear,
+ for(cnt,1 , 2 , 1 ,
+  this.back.dprint(this.maxx ,rnd(9) ,substr(this.numstr,rnd(9),1))
+ ),
+
+ while(this.loop , 
+  seq(
+   /* 移動 */
+   /* ゲームカウント進行 */
+   let(this.gmcount,this.gmcount+1),
+
+   /* レベル設定 */
+   let(this.level,this.gmcount/300),
+
+   /* 数字移動 */
+   if(eq(mod(this.gmcount,10-(this.level/5)),0),
+    seq(
+     this.back.lscroll,
+     /* 数字発生 */
+     if(ge(rnd(10),9-(this.level)),
+      for(cnt,1 , 2+this.level/2 , 1 ,
+       this.back.dprint(this.maxx,rnd(9),substr(this.numstr,rnd(10),1))
+      )
+     )
+    )
+   ),
+
+   /* 弾移動 */
+   if(ge(this.bx,0),
+    let(this.bx,this.bx+1)
+   ),
+   if(gr(this.bx,this.maxx),
+    /* 端から出たら弾を消す */
+    let(this.bx,-1)
+   ),
+
+   /* 自機移動 */
+   if(rinput(^up),let(this.y,this.y-1)),
+   if(rinput(^down),let(this.y,this.y+1)),
+   if(lt(this.y,0),let(this.y,0)),
+   if(gr(this.y,9),let(this.y,9)),
+
+   /* 弾発射 */
+   if(lt(this.bx,0),
+    if(rinput(^sps),
+     seq(
+      let(this.bx,3),
+      let(this.by,this.y)
+     )
+    )
+   ),
+
+   /* 表示 */
+   /* 画面クリア */
+   this.disp.clear,
+
+   /* 数字表示 */
+   this.disp.copy(this.back),
+
+   /* 自機表示 */
+   this.disp.dprint(this.x ,this.y ,"-" & this.stsum & ">"),
+
+   /* 弾表示 */
+   if(ge(this.bx,0),
+    this.disp.dprint(this.bx ,this.by ,"-")
+   ),
+
+   /* スコア表示 */
+   this.disp.dprint(0 ,11 ," -- SUM: " & $lib_util.lpad(this.stsum,2) & "  -- LEVEL:" & $lib_util.lpad(int(this.level),3) & " -- SCORE: " & this.score),
+
+   /* 枠表示 */
+   for(i , 0 , this.maxx , 1 ,
+    seq(
+     this.disp.dprint(i,10 , "-")
+    )
+   ),
+   for(i , 0 , 10 , 1 ,
+    seq(
+     this.disp.dprint(this.maxx+1 , i , "|")
+    )
+   ),
+
+   /* 弾当たり判定 */
+   /* 2文字判定する(すり抜け対策) */
+   if(ge(this.bx,0) ,
+    for(dif, 0 , 1 , 1 ,
+     seq(
+      if(this.chkhit(this.bx+dif,this.by),
+       /* 当たり */
+       seq(
+        /* BOM 判定 */
+        if(eq(this.stsum,0) ,
+         /* BOM */
+         seq(
+          let(bk,this.stsum),
+          let(this.score,this.score+100),
+          for(y,-3 ,3 ,1 ,
+           for(x,-3 , 3 , 1 ,
+            if(not(and(eq(x,0),eq(y,0))),
+             seq(
+              let(bx,this.bx+dif+x),
+              let(by,this.by+y),
+              this.disp.dprint(bx,by,"#"),
+              this.chkhit(bx,by)
+             )
+            )
+           )
+          ),
+          let(this.stsum,bk)
+         )
+        ),
+        this.disp.disp,
+        delay(200),
+        /* 弾消去 */
+        let(this.bx,-1),
+        break
+       )
+      )
+     )
+    )
+   ),
+
+   /* 画面表示 */
+   this.disp.disp,
+
+   /* 終了判定 */
+   for(cnt,1 , 9 , 1 ,
+    if(not(eq(this.back.getch(2 ,cnt)," ")),
+     seq(
+      /* 爆発 */
+      for(cnt , 1 , 15 , 1 , 
+       this.disp.line(substr("*+@",rnd(2),1),this.x+1 ,this.y
+        ,(rnd(70)+30)/100*if(gr(rnd(100),50) , 1 , -1)
+        ,(rnd(70)+30)/100*if(gr(rnd(100),50) , 1 , -1)
+        ,rnd(3)+3
+       )
+      ),
+      /* 終わり */
+      let(this.loop,0),
+      break
+     )
+    )
+   ),
+
+   /* ウエイト */
+   delay(1000/60*3)
+  )
+ ),
+
+ /* ゲームオーバー */
+ this.disp.dprint(10 ,5 , " GAME OVER "),
+ this.disp.disp
+)
+),
+'
+ ),
+
+ /* ゲーム起動 */
+ gm.main,
+
+ /* 終了 */
+ /* リソース削除 */
+ delresall("ALL")
+)
