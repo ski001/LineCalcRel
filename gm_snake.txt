@@ -1,0 +1,171 @@
+/*
+ -------------------------
+ スネークゲーム
+ -------------------------
+*/
+seq(
+ /* 仮想画面(80*12)を作る */
+ let(txt,""),
+ for(cnt , 1 , 80 , 1 , let(txt,stradd(txt," "))),
+ let(txt,stradd(txt,"
+")),
+ let($disptxt,""),
+ for(cnt , 1 , 12 , 1 , let($disptxt,stradd($disptxt,txt))),
+
+ /* 
+仮想画面に文字を表示する関数定義
+@1: X(0始まり)
+@2: Y(0始まり)
+@3: 文字列
+ */
+ def($gm_dprint,"
+seq(
+ let(x,@1), /* @変数は代入不能なのでコピー */
+ let(y,@2), /* @変数は代入不能なのでコピー */
+ let(nodisp,0),
+ if(lt(x,0),let(nodisp,1)),
+ if(gr(x,79),let(nodisp,1)),
+ if(lt(y,0),let(nodisp,1)),
+ if(gr(y,11),let(nodisp,1)),
+ if(not(nodisp),
+  seq(
+   let(stpos,int(y)*82+int(x)),/* 文字列挿入位置 */
+   let(edpos,stpos+strlen(@3)), /* 文字列後半位置 */
+   let($disptxt,stradd(substr($disptxt,0 ,stpos),@3,substr($disptxt,edpos,82*12)))
+  )
+ )
+)
+"),
+
+ /* 
+仮想画面より文字取得
+@1: X(0始まり)
+@2: Y(0始まり)
+ */
+ def($gm_getch,'
+seq(
+ let(x,@1), /* @変数は代入不能なのでコピー */
+ let(y,@2), /* @変数は代入不能なのでコピー */
+ let(ret," "), /* 帰り値 */
+ if(lt(x,0),let(ret,"#")), /* 外は壁 */
+ if(gr(x,79),let(ret,"#")),
+ if(lt(y,0),let(ret,"#")),
+ if(gr(y,11),let(ret,"#")),
+ if(not(eq(ret,"#")),
+  let(ret,substr($disptxt,int(y)*82+int(x),1))
+ ),
+ ret
+)
+'),
+
+/* 画面表示関数定義 */
+ def($gm_disp,"print($disptxt)"),
+
+/* 爆発ライン表示
+ @1:表示文字
+ @2:表示開始X
+ @3:表示開始Y
+ @4:Xベクトル
+ @5:Yベクトル
+ @6:回数
+*/
+ def($gm_line,'
+seq(
+ let(x,@2),
+ let(y,@3),
+ let(d,pow(@4*@4+@5*@5,0.5)),
+ let(xv,@4/d),
+ let(yv,@5/d),
+ for(cnt , 1 , @6 , 1 ,
+  seq(
+   $gm_dprint(x,y,@1),
+   $gm_disp,
+   delay(5),
+   let(x,x+xv),
+   let(y,y+yv)
+  )
+ )
+)
+'
+ ),
+
+/* メインルーチン */
+
+ /* オープニング表示 */
+ while(1 , 
+  seq(
+   if(rinput(^sps), break),
+   $gm_dprint(10 ,5 ,"push sps to start"),
+   $gm_disp,
+   delay(100),
+   $gm_dprint(10 ,5 ,"                 "),
+   $gm_disp,
+   delay(50)
+  )
+ ),
+
+ /* 初期化 */
+ let(x,0),
+ let(y,0),
+ let(xv,1),
+ let(yv,0),
+ let(score,0),
+ for(cnt,0 , 11 , 1 , $gm_dprint(79 ,cnt ,"|")),
+ for(cnt,0 , 79 , 1 , $gm_dprint(cnt,11 ,"-")),
+
+ /* ゲームループ */
+ while(1 ,
+  seq(
+   /* スコアアップ */
+   let(score,score+1),
+
+   /* 表示 */
+   $gm_dprint(x,y , "#"),
+   $gm_dprint(0 ,11 , stradd("SnakeGame--SCORE:",score)),
+   $gm_disp,
+   delay(1000/5 / (score / 100 + 1)),
+
+   /* 更新 */
+   if(rinput(^right)+rinput(^left)+rinput(^up)+rinput(^down),
+    /* キー入力があった */
+    seq(
+     if(rinput(^right),seq(let(yv,0),let(xv,1))),
+     if(rinput(^left),seq(let(yv,0),let(xv,-1))),
+     if(rinput(^up),seq(let(xv,0),let(yv,-1))),
+     if(rinput(^down),seq(let(xv,0),let(yv,1)))
+    )
+   ),
+   let(x,x+xv),
+   let(y,y+yv),
+
+   /* 当たり判定 */
+   if(not(eq($gm_getch(x,y)," ")),
+    /* ぶつかった */
+    break
+   )
+  )
+ ),
+
+ /* 爆発 */
+ for(cnt , 1 , 15 , 1 , 
+  $gm_line(substr("*+@",rnd(2),1),x,y
+   ,(rnd(70)+30)/100*if(gr(rnd(100),50) , 1 , -1)
+   ,(rnd(70)+30)/100*if(gr(rnd(100),50) , 1 , -1)
+   ,rnd(3)+3
+  )
+ ),
+
+ /* ゲームオーバー */
+ $gm_dprint(10 , 5 , "  GAME OVER  "),
+ $gm_disp,
+
+ /* 一時定義関数消去 */
+ del($gm_disp),
+ del($gm_dprint),
+ del($gm_line),
+ del($gm_getch),
+ del($disptxt),
+
+ /* スコアを値にする */
+ score
+)
