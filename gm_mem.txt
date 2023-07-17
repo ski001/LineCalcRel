@@ -2,7 +2,7 @@
  // --------------------
  // 神経衰弱
  // --------------------
- bindres(cGm, context), // ゲームメインクラスインスタンス
+ cGm = context, // ゲームメインクラスインスタンス
  setrcom(cGm, "神経衰弱メインクラス"), 
 
  // --------------
@@ -56,8 +56,8 @@
      // 札を作る(同じ札２枚づつ)
      for(cnt, 0, @1 + 1, 1, 
       {
-       bindres(this.fudaLis[cnt * 2], this.newFuda(cnt)), 
-       bindres(this.fudaLis[cnt * 2 + 1], this.newFuda(cnt)) 
+       this.fudaLis[cnt * 2] = this.newFuda(cnt), 
+       this.fudaLis[cnt * 2 + 1] = this.newFuda(cnt) 
       }
      ), 
      // バラバラに置く
@@ -211,13 +211,16 @@
 
    while(1, 
     {
+     this.dispGame, //表示
+
      // キー入力
      vec = 0, 
      pos = this.cBd.sel, 
-     if(rinput(^left),
+     kv = $lib_util.inputw2(^left, ^right, ^sps), 
+     if(kv == ^left,
       { vec = -1, pos = pos - 1 }
      ), 
-     if(rinput(^right),
+     if(kv == ^right,
       { vec = 1, pos = pos + 1 }
      ), 
      this.cBd.sel = pos, 
@@ -225,11 +228,8 @@
      // 選択できる札まで移動
      this.goSelFuda(vec), 
 
-     this.dispGame, //表示
-     delay(100), 
-
      // 決定
-     if(rinput(^sps),
+     if(kv == ^sps,
       {
        fuda = this.cBd.fudaLis[:: this.cBd.sel], 
        if(!fuda.open && !fuda.visible, break) // 選択
@@ -246,8 +246,8 @@
  // --------------
  fnc(cGm.main, 
   {
-   bindres(this.disp,newCDisp), // 仮想画面作成
-   bindres(this.cBd, this.newBoard(this.disp)),  // ボード作製
+   this.disp = newCDisp, // 仮想画面作成
+   this.cBd = this.newBoard(this.disp),  // ボード作製
    this.score = 0, // スコア
    this.lv = 0, // レベル
 
@@ -281,7 +281,7 @@
        this.selFuda, 
        this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
        this.dispGame, 
-       delay(100),   
+//       delay(100),   
 
        this.selFuda, 
        this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
@@ -291,10 +291,12 @@
        // 判定
        cv = this.cBd.chk, 
        this.dispGame, 
-       delay(100), 
+//       delay(100), 
 
+       sc = 10 * (this.mvmax - this.mvcnt), 
+       if(sc <= 0, sc = 1), 
        if(cv == 1 || cv == 2, 
-        this.score = this.score + (this.lv + 1) * (this.mvmax - this.mvcnt)
+        this.score = this.score + (this.lv + 1) * sc
        ), 
 
        this.dispGame, 
@@ -302,7 +304,7 @@
        if(cv == 2, 
         {
          // クリア
-         this.score = this.score + (this.lv + 1) * 10 * (this.mvmax - this.mvcnt), 
+         this.score = this.score + (this.lv + 1) * 10 * sc, 
          this.lv = this.lv + 1, 
          if(this.lv >= 9, 
           this.disp.blink(4, 3, " GREAT! ALL CLEAR ", 5), 
