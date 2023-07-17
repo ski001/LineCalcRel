@@ -3,7 +3,7 @@
 // CPU と USER 2人勝負
 // ---------------
 {
- gm = context, // ゲームのコンテキストリソース作成
+ bindres(gm,context), // ゲームのコンテキストリソース作成
  setrcom(gm,"21ゲーム"),
 
 // -----------------------------------------------------------------------
@@ -625,7 +625,7 @@
        {
         // シャッフルの為のユニークな乱数を作る
         rndnum = this.getRnd,
-        this.cardlis[cnt] = this.gm.newCOneCard(num,rndnum) , // カード作成
+        bindres(this.cardlis[cnt],this.gm.newCOneCard(num,rndnum)) , // カード作成
         cnt = cnt + 1
        }
       )
@@ -633,7 +633,7 @@
 
      // ジョーカーを入れる
      rndnum = this.getRnd,
-     this.cardlis[cnt] = this.gm.newCOneCard(14 ,rndnum),
+     bindres(this.cardlis[cnt],this.gm.newCOneCard(14 ,rndnum)),
 
      // シャッフルする
      sort(this.cardlis,"{v1 = this.cardlis[ind1].rndnum , v2 = this.cardlis[ind2].rndnum , if(v1 > v2 , 1 , if(v1 == v2 , 0 , -1))}"),
@@ -702,10 +702,10 @@
  fnc(gm.main,
 // ++
   {
-   this.disp = newCDisp, // 仮想画面作成
-   this.card = this.newCCard(this), // CARD
-   this.cpu = this.newCCpu(this.card,this.disp , 0 , 2), // CPU
-   this.user = this.newCUser(this.card,this.disp , 30 , 2), // USER
+   bindres(this.disp,newCDisp), // 仮想画面作成
+   bindres(this.card,this.newCCard(this)), // CARD
+   bindres(this.cpu,this.newCCpu(this.card,this.disp , 0 , 2)), // CPU
+   bindres(this.user,this.newCUser(this.card,this.disp , 30 , 2)), // USER
    this.score = 0 , // スコア
 
    // タイトル表示

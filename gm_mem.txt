@@ -2,7 +2,7 @@
  // --------------------
  // 神経衰弱
  // --------------------
- cGm = context, // ゲームメインクラスインスタンス
+ bindres(cGm, context), // ゲームメインクラスインスタンス
  setrcom(cGm, "神経衰弱メインクラス"), 
 
  // --------------
@@ -56,8 +56,8 @@
      // 札を作る(同じ札２枚づつ)
      for(cnt, 0, @1 + 1, 1, 
       {
-       this.fudaLis[cnt * 2] = this.newFuda(cnt), 
-       this.fudaLis[cnt * 2 + 1] = this.newFuda(cnt) 
+       bindres(this.fudaLis[cnt * 2], this.newFuda(cnt)), 
+       bindres(this.fudaLis[cnt * 2 + 1], this.newFuda(cnt)) 
       }
      ), 
      // バラバラに置く
@@ -246,8 +246,8 @@
  // --------------
  fnc(cGm.main, 
   {
-   this.disp = newCDisp, // 仮想画面作成
-   this.cBd = this.newBoard(this.disp),  // ボード作製
+   bindres(this.disp,newCDisp), // 仮想画面作成
+   bindres(this.cBd, this.newBoard(this.disp)),  // ボード作製
    this.score = 0, // スコア
    this.lv = 0, // レベル
 
