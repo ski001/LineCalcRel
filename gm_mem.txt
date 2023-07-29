@@ -2,335 +2,336 @@
  // --------------------
  // 神経衰弱
  // --------------------
- bindres(cGm, context), // ゲームメインクラスインスタンス
- setrcom(cGm, "神経衰弱メインクラス"), 
-
- // --------------
- // ボードクラスコンストラクタ
- // @1:表示用仮想画面クラス
- // --------------
- fnc(cGm.newBoard, 
+ class(CMain,
   {
-   cBd = context, // ボードクラスインスタンス
-   setrcom(cBd, "ボードクラス"), 
-   cBd.disp = @1, // 仮想画面
-   cBd.sel = -1, // 選択された札
-   cBd.lv = 0, // レベル
+   setrcom(cls, "神経衰弱メインクラス"), 
 
    // --------------
-   // 札数を返す
+   // ボードクラスコンストラクタ
+   // @1:表示用仮想画面クラス
    // --------------
-   fnc(cBd.getFudaCnt, 
+   class(cls.Board, 
     {
-     len(this.fudaLis)
-    }
-   ), 
-
-   // --------------
-   // 札コンストラクタ
-   // @1:札値一文字
-   // --------------
-   fnc(cBd.newFuda, 
-    {
-     cFuda = context, // 札クラスインスタンス
-     setrcom(cFuda, "札クラス:" & @1), 
-
-     cFuda.val = @1, // 値保存
-     cFuda.rndVal = rnd(1000), // シャッフル用乱数
-     cFuda.visible = 0, // 0->見えていない 1->見えている
-     cFuda.open = 0, // 確定されたか
-
-     cFuda // インスタンスを返す
-    }
-   ), 
-
-   // ------------------
-   // ボード初期化
-   // @1:レベル(0～)
-   // ------------------
-   fnc(cBd.initBoard, 
-    {
-     this.lv = @1, // レベル
-     this.sel = 0, // 選択初期化
-     del(this.fudaLis), // 札リストクリア
-     // 札を作る(同じ札２枚づつ)
-     for(cnt, 0, @1 + 1, 1, 
+     setrcom(cls, "ボードクラス"), 
+     cls.disp = @1, // 仮想画面
+     cls.sel = -1, // 選択された札
+     cls.lv = 0, // レベル
+  
+     // --------------
+     // 札数を返す
+     // --------------
+     fnc(cls.getFudaCnt, 
       {
-       bindres(this.fudaLis[cnt * 2], this.newFuda(cnt)), 
-       bindres(this.fudaLis[cnt * 2 + 1], this.newFuda(cnt)) 
+       len(this.fudaLis)
       }
      ), 
-     // バラバラに置く
-     sort(this.fudaLis,
-      =>
+  
+     // --------------
+     // 札コンストラクタ
+     // @1:札値一文字
+     // --------------
+     fnc(cls.newFuda, 
       {
-       r1 = this.fudaLis[ind1].rndVal, 
-       r2 = this.fudaLis[ind2].rndVal, 
-       if(r1 < r2, -1, if(r1 > r2, 1, -1))
+       cFuda = context, // 札クラスインスタンス
+       setrcom(cFuda, "札クラス:" & @1), 
+  
+       cFuda.val = @1, // 値保存
+       cFuda.rndVal = rnd(1000), // シャッフル用乱数
+       cFuda.visible = 0, // 0->見えていない 1->見えている
+       cFuda.open = 0, // 確定されたか
+  
+       cFuda // インスタンスを返す
       }
-     )
-    }
-   ), 
-
-   // ------------------
-   // ボードチェック
-   // ２つ札を visible にしてチェックする
-   // return:0->同じ札でなかった 1->同じ札だった 2->終了
-   // ------------------
-   fnc(cBd.chk, 
-    {
-     // visible になっている札を２つ得る
-     ford(tag, this.fudaLis, 
-      if(this.fudaLis[tag].visible, 
-       if(!isdef(fuda1),
-        // はじめの１つ
-        fuda1 = this.fudaLis[tag], 
-        // ２つめ
+     ), 
+  
+     // ------------------
+     // ボード初期化
+     // @1:レベル(0～)
+     // ------------------
+     fnc(cls.initBoard, 
+      {
+       this.lv = @1, // レベル
+       this.sel = 0, // 選択初期化
+       del(this.fudaLis), // 札リストクリア
+       // 札を作る(同じ札２枚づつ)
+       for(cnt, 0, @1 + 1, 1, 
         {
-         fuda2 = this.fudaLis[tag],
-         break
+         this.fudaLis[cnt * 2] = this.newFuda(cnt), 
+         this.fudaLis[cnt * 2 + 1] = this.newFuda(cnt) 
+        }
+       ), 
+       // バラバラに置く
+       sort(this.fudaLis,
+        =>
+        {
+         r1 = this.fudaLis[ind1].rndVal, 
+         r2 = this.fudaLis[ind2].rndVal, 
+         if(r1 < r2, -1, if(r1 > r2, 1, -1))
         }
        )
-      )
-     ), 
-     if(!isdef(fuda1) || !isdef(fuda2), {dbg("err"), return(0)}), // visible の札が２つない
-
-     fuda1.visible = 0, 
-     fuda2.visible = 0, 
-
-     // 札の判定
-     if(fuda1.val == fuda2.val, 
-      // 同一札なので開示する
-      {
-       fuda1.open = 1, 
-       fuda2.open = 1, 
-
-       // 全開示判定
-       allopen = 1, 
-       ford(tag, this.fudaLis, if(this.fudaLis[tag].open == 0, { allopen = 0, break })), 
-       if(!allopen, return(1)), // 同じだった
-       return(2) // 終了
-      }, 
-      // 違う札
-      {
-       return(0)
       }
-     )
-    }
-   ), 
-
-   // ------------------
-   // ボード表示
-   // ------------------
-   fnc(cBd.dispBoard, 
-    {
-     cnt = 0, 
-     divcnt = this.lv + 2, 
-     ford(tag, this.fudaLis, 
+     ), 
+  
+     // ------------------
+     // ボードチェック
+     // ２つ札を visible にしてチェックする
+     // return:0->同じ札でなかった 1->同じ札だった 2->終了
+     // ------------------
+     fnc(cls.chk, 
       {
-       x = mod(cnt, divcnt) * 2 + 1, 
-       y = int(cnt / divcnt) * 4 + 2, 
-       fuda = this.fudaLis[tag], 
-
-       // 札表示
-       if(!fuda.open, 
+       // visible になっている札を２つ得る
+       ford(tag, this.fudaLis, 
+        if(this.fudaLis[tag].visible, 
+         if(!isdef(fuda1),
+          // はじめの１つ
+          fuda1 = this.fudaLis[tag], 
+          // ２つめ
+          {
+           fuda2 = this.fudaLis[tag],
+           break
+          }
+         )
+        )
+       ), 
+       if(!isdef(fuda1) || !isdef(fuda2), {dbg("err"), return(0)}), // visible の札が２つない
+  
+       fuda1.visible = 0, 
+       fuda2.visible = 0, 
+  
+       // 札の判定
+       if(fuda1.val == fuda2.val, 
+        // 同一札なので開示する
         {
-         this.disp.dprint(x - 1, y, "+-+"), 
-         this.disp.dprint(x - 1, y + 1, "| |"), 
-         this.disp.dprint(x - 1, y + 2, "+-+"), 
-
-         if(fuda.visible, 
-          this.disp.dprint(x, y + 1, fuda.val), 
-          this.disp.dprint(x, y + 1, "#") 
+         fuda1.open = 1, 
+         fuda2.open = 1, 
+  
+         // 全開示判定
+         allopen = 1, 
+         ford(tag, this.fudaLis, if(this.fudaLis[tag].open == 0, { allopen = 0, break })), 
+         if(!allopen, return(1)), // 同じだった
+         return(2) // 終了
+        }, 
+        // 違う札
+        {
+         return(0)
+        }
+       )
+      }
+     ), 
+  
+     // ------------------
+     // ボード表示
+     // ------------------
+     fnc(cls.dispBoard, 
+      {
+       cnt = 0, 
+       divcnt = this.lv + 2, 
+       ford(tag, this.fudaLis, 
+        {
+         x = mod(cnt, divcnt) * 2 + 1, 
+         y = int(cnt / divcnt) * 4 + 2, 
+         fuda = this.fudaLis[tag], 
+  
+         // 札表示
+         if(!fuda.open, 
+          {
+           this.disp.dprint(x - 1, y, "+-+"), 
+           this.disp.dprint(x - 1, y + 1, "| |"), 
+           this.disp.dprint(x - 1, y + 2, "+-+"), 
+  
+           if(fuda.visible, 
+            this.disp.dprint(x, y + 1, fuda.val), 
+            this.disp.dprint(x, y + 1, "#") 
+           ), 
+          }
          ), 
+        
+         cnt = cnt + 1
         }
        ), 
-      
-       cnt = cnt + 1
-      }
-     ), 
-
-     // 選択カーソル表示
-     selpos = mod(this.sel, this.getFudaCnt), 
-     if(selpos >= 0, 
-      {
-       x = mod(selpos, divcnt) * 2 + 1, 
-       y = int(selpos / divcnt) * 4 + 5, 
-       this.disp.dprint(x, y, "^"),  
+  
+       // 選択カーソル表示
+       selpos = mod(this.sel, this.getFudaCnt), 
+       if(selpos >= 0, 
+        {
+         x = mod(selpos, divcnt) * 2 + 1, 
+         y = int(selpos / divcnt) * 4 + 5, 
+         this.disp.dprint(x, y, "^"),  
+        }
+       )
       }
      )
     }
    ), 
-
-   cBd // ボードクラスインスタンスを返す
-  }
- ), 
-
- // --------------
- // ゲーム表示
- // --------------
- fnc(cGm.dispGame, 
-  {
-   this.disp.clear, // 消去
-   this.disp.dprint(0, 0, "神経衰弱 LV:" & (this.lv + 1) & " 選択回数:" & this.mvcnt & "/" & this.mvmax & " SCORE:" & this.score), // スコア
-   this.disp.dprint(0, 11, "キー操作 移動:← → 決定:スペース"),
-
-   this.cBd.dispBoard, // 表示, 
-   this.disp.disp 
-  }
- ), 
-
- // --------------
- // 選択できる札まで移動
- // @1:ベクトル(-1:左 1:右)
- // --------------
- fnc(cGm.goSelFuda, 
-  {
-   if(!isdef(@1), vec = 1, vec = @1), 
-   pos = this.cBd.sel, 
-   while(vec != 0, 
+  
+   // --------------
+   // ゲーム表示
+   // --------------
+   fnc(cls.dispGame, 
     {
-     if(pos < 0, pos = pos + this.cBd.getFudaCnt), 
-     if(pos >= this.cBd.getFudaCnt, pos = pos - this.cBd.getFudaCnt), 
-     fuda = this.cBd.fudaLis[:: pos], 
-     if(fuda.visible == 0 && fuda.open == 0, break), 
-     pos = pos + vec, 
+     this.disp.clear, // 消去
+     this.disp.dprint(0, 0, "神経衰弱 LV:" & (this.lv + 1) & " 選択回数:" & this.mvcnt & "/" & this.mvmax & " SCORE:" & this.score), // スコア
+     this.disp.dprint(0, 11, "キー操作 移動:← → 決定:スペース"),
+  
+     this.cBd.dispBoard, // 表示, 
+     this.disp.disp 
     }
    ), 
-   this.cBd.sel = pos
-  }
- ), 
-
- // --------------
- // 札選択
- // --------------
- fnc(cGm.selFuda, 
-  {
+  
+   // --------------
    // 選択できる札まで移動
-   this.goSelFuda, 
-
-   while(1, 
+   // @1:ベクトル(-1:左 1:右)
+   // --------------
+   fnc(cls.goSelFuda, 
     {
-     this.dispGame, //表示
-
-     // キー入力
-     vec = 0, 
+     if(!isdef(@1), vec = 1, vec = @1), 
      pos = this.cBd.sel, 
-     kv = $lib_util.inputw2(^left, ^right, ^sps), 
-     if(kv == ^left,
-      { vec = -1, pos = pos - 1 }
-     ), 
-     if(kv == ^right,
-      { vec = 1, pos = pos + 1 }
-     ), 
-     this.cBd.sel = pos, 
-
-     // 選択できる札まで移動
-     this.goSelFuda(vec), 
-
-     // 決定
-     if(kv == ^sps,
+     while(vec != 0, 
       {
-       fuda = this.cBd.fudaLis[:: this.cBd.sel], 
-       if(!fuda.open && !fuda.visible, break) // 選択
+       if(pos < 0, pos = pos + this.cBd.getFudaCnt), 
+       if(pos >= this.cBd.getFudaCnt, pos = pos - this.cBd.getFudaCnt), 
+       fuda = this.cBd.fudaLis[:: pos], 
+       if(fuda.visible == 0 && fuda.open == 0, break), 
+       pos = pos + vec, 
       }
-     ) 
+     ), 
+     this.cBd.sel = pos
     }
-   )   
-
-  }
- ), 
-
- // --------------
- // ゲームメインルーチン
- // --------------
- fnc(cGm.main, 
-  {
-   bindres(this.disp,newCDisp), // 仮想画面作成
-   bindres(this.cBd, this.newBoard(this.disp)),  // ボード作製
-   this.score = 0, // スコア
-   this.lv = 0, // レベル
-
-   // タイトル表示
-   this.disp.dprint(12 , 4 , "神経衰弱"),
-   while(1 , 
+   ), 
+  
+   // --------------
+   // 札選択
+   // --------------
+   fnc(cls.selFuda, 
     {
-     this.disp.dprint(7 ,6 ,"Push sps to start"),
-     this.disp.disp,
-     delay(100),
-     this.disp.dprint(7 ,6 ,"                 "),
-     this.disp.disp,
-     if(rinput(^sps), break),
-     delay(50)
-    }
-   ),
-   delay(500), 
-
-   // LV ループ
-   while(this.lv <= 8, 
-    {
-     // 初期化
-     this.cBd.initBoard(this.lv), // ボード初期化
-     this.mvcnt = 1, // 選択回数
-     this.mvmax = this.lv * 3 + 5, // 選択可能数
-
-     // ゲーム ループ
-     while(this.mvcnt <= this.mvmax, 
+     // 選択できる札まで移動
+     this.goSelFuda, 
+  
+     while(1, 
       {
-       // 札選択
-       this.selFuda, 
-       this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
-       this.dispGame, 
-//       delay(100),   
-
-       this.selFuda, 
-       this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
-       this.dispGame, 
-       delay(1000), 
-
-       // 判定
-       cv = this.cBd.chk, 
-       this.dispGame, 
-//       delay(100), 
-
-       sc = 10 * (this.mvmax - this.mvcnt), 
-       if(sc <= 0, sc = 1), 
-       if(cv == 1 || cv == 2, 
-        this.score = this.score + (this.lv + 1) * sc
+       this.dispGame, //表示
+  
+       // キー入力
+       vec = 0, 
+       pos = this.cBd.sel, 
+       kv = $lib_util.inputw2(^left, ^right, ^sps), 
+       if(kv == ^left,
+        { vec = -1, pos = pos - 1 }
        ), 
-
-       this.dispGame, 
-
-       if(cv == 2, 
+       if(kv == ^right,
+        { vec = 1, pos = pos + 1 }
+       ), 
+       this.cBd.sel = pos, 
+  
+       // 選択できる札まで移動
+       this.goSelFuda(vec), 
+  
+       // 決定
+       if(kv == ^sps,
         {
-         // クリア
-         this.score = this.score + (this.lv + 1) * 10 * sc, 
-         this.lv = this.lv + 1, 
-         if(this.lv >= 9, 
-          this.disp.blink(4, 3, " GREAT! ALL CLEAR ", 5), 
-          this.disp.blink(4, 3, " CLEAR GO NEXT LEVEL ", 3) 
+         fuda = this.cBd.fudaLis[:: this.cBd.sel], 
+         if(!fuda.open && !fuda.visible, break) // 選択
+        }
+       ) 
+      }
+     )   
+  
+    }
+   ), 
+  
+   // メンバ変数
+   cls.disp = newCDisp, // 仮想画面作成
+   cls.cBd = cls.newBoard(cls.disp),  // ボード作製
+   cls.score = 0, // スコア
+   cls.lv = 0, // レベル
+
+   // --------------
+   // ゲームメインルーチン
+   // --------------
+   fnc(cls.main, 
+    {
+  
+     // タイトル表示
+     this.disp.dprint(12 , 4 , "神経衰弱"),
+     while(1 , 
+      {
+       this.disp.dprint(7 ,6 ,"Push sps to start"),
+       this.disp.disp,
+       delay(100),
+       this.disp.dprint(7 ,6 ,"                 "),
+       this.disp.disp,
+       if(rinput(^sps), break),
+       delay(50)
+      }
+     ),
+     delay(500), 
+  
+     // LV ループ
+     while(this.lv <= 8, 
+      {
+       // 初期化
+       this.cBd.initBoard(this.lv), // ボード初期化
+       this.mvcnt = 1, // 選択回数
+       this.mvmax = this.lv * 3 + 5, // 選択可能数
+  
+       // ゲーム ループ
+       while(this.mvcnt <= this.mvmax, 
+        {
+         // 札選択
+         this.selFuda, 
+         this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
+         this.dispGame, 
+  
+         this.selFuda, 
+         this.cBd.fudaLis[:: this.cBd.sel].visible = 1, 
+         this.dispGame, 
+         delay(1000), 
+  
+         // 判定
+         cv = this.cBd.chk, 
+         this.dispGame, 
+  
+         sc = 10 * (this.mvmax - this.mvcnt), 
+         if(sc <= 0, sc = 1), 
+         if(cv == 1 || cv == 2, 
+          this.score = this.score + (this.lv + 1) * sc
          ), 
+  
+         this.dispGame, 
+  
+         if(cv == 2, 
+          {
+           // クリア
+           this.score = this.score + (this.lv + 1) * 10 * sc, 
+           this.lv = this.lv + 1, 
+           if(this.lv >= 9, 
+            this.disp.blink(4, 3, " GREAT! ALL CLEAR ", 5), 
+            this.disp.blink(4, 3, " CLEAR GO NEXT LEVEL ", 3) 
+           ), 
+           break
+          }
+         ), 
+         // ゲームカウントをすすめる
+         this.mvcnt = this.mvcnt + 1, 
+        }
+       ),
+       // 終了判定
+       if(this.mvmax < this.mvcnt, 
+        {
+         // ゲームオーバー
          break
         }
        ), 
-       // ゲームカウントをすすめる
-       this.mvcnt = this.mvcnt + 1, 
-      }
-     ),
-     // 終了判定
-     if(this.mvmax < this.mvcnt, 
-      {
-       // ゲームオーバー
-       break
       }
      ), 
+     // ゲームオーバー
+     this.disp.blink(4, 4, " GAME OVER ", 3)
     }
-   ), 
-   // ゲームオーバー
-   this.disp.blink(4, 4, " GAME OVER ", 3)
+   ),
   }
- ), 
+ ),
 
  // ゲーム起動
- cGm.main()
+ gm = newCMain,
+ gm.main
 }
