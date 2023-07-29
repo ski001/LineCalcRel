@@ -164,6 +164,32 @@
     }
    ), 
   
+   /* 
+    キー入力待ちウエイト。
+    指定キーが入力されるまで待ち、離されると帰る。
+    inputw2(^left,^right,^sps)
+
+    @1~:キュー入力する文字列
+    ret:キー入力値
+
+   */
+   fnc(cls.inputw2,
+    {
+     rkey = "", /* キー入力値(rinput に与える文字列) */
+     winput, // キー入力待ち
+     /* キー入力 */
+     for(cnt2,1 , 100 , 1 ,
+      {
+       if(!(isdef( ("@" & cnt2) )) , break),
+       kystr = argval(cnt2) ,
+       if(rinput(kystr) , { rkey = kystr ,break} ) /* キー入力があった */
+      }
+     ), 
+     while(rkey != "" && rinput(rkey) == 1, 1), // キーが離されるのを待つ
+     rkey /* 入力されたキーを返す */
+    }
+   ), 
+
    // --------------
    // ゲーム表示
    // --------------
@@ -214,7 +240,7 @@
        // キー入力
        vec = 0, 
        pos = this.cBd.sel, 
-       kv = $lib_util.inputw2(^left, ^right, ^sps), 
+       kv = this.inputw2(^left, ^right, ^sps), 
        if(kv == ^left,
         { vec = -1, pos = pos - 1 }
        ), 
